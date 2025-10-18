@@ -1,0 +1,40 @@
+name: furmatch_clean
+description: "A new Flutter project."
+publish_to: 'none'
+
+version: 1.0.0+1
+
+environment:
+  sdk: ">=3.3.0 <4.0.0"
+
+dependencies:
+  flutter:
+    sdk: flutter
+
+  flutter_secure_storage: ^9.2.2
+  http: ^1.2.2
+  cupertino_icons: ^1.0.8
+
+    # UI
+  google_fonts: ^6.2.1
+
+  # file and image
+  file_picker: ^8.1.2
+  image_picker: ^1.1.2
+  shared_preferences: ^2.3.3
+
+  supabase_flutter: ^2.3.4
+  intl: ^0.18.1
+
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+  flutter_lints: ^5.0.0
+
+flutter:
+  uses-material-design: true
+
+  assets:
+    - assets/Logos/MAINPAGE.png
+    - assets/Logos/dog_cat.png
