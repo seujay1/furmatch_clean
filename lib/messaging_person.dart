@@ -51,8 +51,6 @@ class _MessagingPersonState extends State<MessagingPerson> {
     final user = client.auth.currentUser;
     if (user == null) return;
     currentUserId = user.id;
-
-    // ------------------------
     chatPartnerId = widget.ownerId;
 
     await _loadChatPartnerName();
@@ -102,49 +100,46 @@ class _MessagingPersonState extends State<MessagingPerson> {
         _scrollToBottom();
       }
     } catch (e) {
-      print('initial load FAILED: $e');
+      print('Initial load FAILED: $e');
     }
   }
 
-  void _setupMessageStream() {
-    if (currentUserId == null) return;
+  /// ✅ Fixed Real-Time Stream (Bidirectional Updates)
+void _setupMessageStream() {
+  if (currentUserId == null) return;
 
-    _subscription?.cancel();
+  _subscription?.cancel();
 
-    // show only messages for this pet
-    final stream = client
-        .from('messages:pet_id=eq.${widget.petId}')
-        .stream(primaryKey: ['id']);
+  // Create a realtime channel for the 'messages' table
+  final channel = client.channel('realtime:messages');
 
-    _subscription = stream.listen((messages) {
-      try {
-        final visibleMessages = messages.where((msg) {
-          final sender = msg['sender_id'];
-          final receiver = msg['receiver_id'];
-          return sender == currentUserId || receiver == currentUserId;
-        }).toList();
+  channel.onPostgresChanges(
+    event: PostgresChangeEvent.insert,
+    schema: 'public',
+    table: 'messages',
+    callback: (payload) {
+      final msg = payload.newRecord;
 
-        // no duplicates by id
-        final existingIds = _messages.map((m) => m['id']).toSet();
-        for (var msg in visibleMessages) {
-          if (!existingIds.contains(msg['id'])) {
-            _messages.add(msg);
-          }
-        }
+      // Check if this message belongs to this conversation
+      final sender = msg['sender_id'];
+      final receiver = msg['receiver_id'];
+      final pet = msg['pet_id'];
 
-        _messages.sort(_compareByCreatedAt);
+      final involved = (sender == currentUserId && receiver == chatPartnerId) ||
+          (sender == chatPartnerId && receiver == currentUserId);
 
-        if (mounted) {
-          setState(() {});
-          _scrollToBottom();
-        }
-      } catch (e) {
-        print('realtime processing ERROR: $e');
+      if (involved && pet == widget.petId) {
+        setState(() {
+          _messages.add(msg);
+          _messages.sort(_compareByCreatedAt);
+        });
+        _scrollToBottom();
       }
-    }, onError: (err) {
-      print('realtime stream ERROR: $err');
-    });
-  }
+    },
+  );
+
+  channel.subscribe();
+}
 
   int _compareByCreatedAt(Map<String, dynamic> a, Map<String, dynamic> b) {
     DateTime parseCreated(dynamic v) {
@@ -196,10 +191,12 @@ class _MessagingPersonState extends State<MessagingPerson> {
       _scrollToBottom();
     } catch (e) {
       print('ERROR sending message: $e');
-      if (mounted)
+      if (mounted) {
         setState(() => _messages.removeWhere((m) => m['id'] == tempId));
+      }
       ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('FAILED to send message.')));
+        const SnackBar(content: Text('FAILED to send message.')),
+      );
     }
   }
 
@@ -244,6 +241,13 @@ class _MessagingPersonState extends State<MessagingPerson> {
           ],
         ),
         backgroundColor: Colors.brown[300],
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.refresh, color: Colors.white),
+            tooltip: 'Refresh Chat',
+            onPressed: _loadInitialMessages,
+          ),
+        ],
       ),
       backgroundColor: const Color(0xFFF8F4EF),
       body: Column(

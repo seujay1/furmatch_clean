@@ -5,7 +5,7 @@ import 'package:image_picker/image_picker.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
-import 'rootpage.dart'; 
+import 'rootpage.dart';
 
 class UserProfileScreen extends StatefulWidget {
   const UserProfileScreen({super.key});
@@ -19,6 +19,7 @@ class _UserProfileScreenState extends State<UserProfileScreen> {
 
   bool isEditing = false;
   bool _isSaving = false;
+  bool _isLoading = false;
   File? _image;
   String? selectedGender;
   String? selectedUserType;
@@ -91,7 +92,6 @@ class _UserProfileScreenState extends State<UserProfileScreen> {
         ),
       );
 
-      // --------go to rootpage
       await Future.delayed(const Duration(milliseconds: 500));
       if (mounted) {
         Navigator.pushAndRemoveUntil(
@@ -116,6 +116,8 @@ class _UserProfileScreenState extends State<UserProfileScreen> {
   Future<void> _loadUserProfile() async {
     final user = _client.auth.currentUser;
     if (user == null) return;
+
+    setState(() => _isLoading = true);
 
     try {
       final data = await _client
@@ -146,6 +148,8 @@ class _UserProfileScreenState extends State<UserProfileScreen> {
       }
     } catch (e) {
       print('ERROR loading profile: $e');
+    } finally {
+      if (mounted) setState(() => _isLoading = false);
     }
   }
 
@@ -220,6 +224,20 @@ class _UserProfileScreenState extends State<UserProfileScreen> {
         backgroundColor: Colors.white,
         elevation: 0,
         actions: [
+          IconButton(
+            icon: const Icon(Icons.refresh, color: Colors.brown),
+            onPressed: _isLoading
+                ? null
+                : () async {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(
+                        content: Text('Refreshing profile...'),
+                        duration: Duration(seconds: 1),
+                      ),
+                    );
+                    await _loadUserProfile();
+                  },
+          ),
           if (!isEditing)
             IconButton(
               icon: const Icon(Icons.delete, color: Colors.red),
@@ -227,143 +245,172 @@ class _UserProfileScreenState extends State<UserProfileScreen> {
             ),
         ],
       ),
-      body: SingleChildScrollView(
-        padding: const EdgeInsets.all(16),
-        child: Form(
-          key: _formKey,
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [
-              GestureDetector(
-                onTap: isEditing ? _pickImage : null,
-                child: Container(
-                  height: 180,
-                  decoration: BoxDecoration(
-                    color: const Color(0xFFECECEC),
-                    borderRadius: BorderRadius.circular(16),
-                    image: _image != null
-                        ? DecorationImage(
-                            image: FileImage(_image!), fit: BoxFit.cover)
-                        : null,
-                  ),
-                  child: _image == null
-                      ? Column(
-                          mainAxisAlignment: MainAxisAlignment.center,
-                          children: [
-                            const Icon(Icons.camera_alt,
-                                color: Colors.black54, size: 50),
-                            const SizedBox(height: 10),
-                            Text(
-                              'Add Photo',
-                              style: GoogleFonts.jost(
-                                color: Colors.black54,
-                                fontSize: 18,
-                                fontWeight: FontWeight.bold,
+      body: RefreshIndicator(
+        onRefresh: _loadUserProfile,
+        color: Colors.brown,
+        child: _isLoading
+            ? const Center(
+                child: CircularProgressIndicator(color: Colors.brown))
+            : SingleChildScrollView(
+                physics: const AlwaysScrollableScrollPhysics(),
+                padding: const EdgeInsets.all(16),
+                child: Form(
+                  key: _formKey,
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                    children: [
+                      GestureDetector(
+                        onTap: isEditing ? _pickImage : null,
+                        child: Container(
+                          height: 180,
+                          decoration: BoxDecoration(
+                            color: const Color(0xFFECECEC),
+                            borderRadius: BorderRadius.circular(16),
+                            image: _image != null
+                                ? DecorationImage(
+                                    image: FileImage(_image!),
+                                    fit: BoxFit.cover,
+                                  )
+                                : null,
+                          ),
+                          child: _image == null
+                              ? Column(
+                                  mainAxisAlignment: MainAxisAlignment.center,
+                                  children: [
+                                    const Icon(Icons.camera_alt,
+                                        color: Colors.black54, size: 50),
+                                    const SizedBox(height: 10),
+                                    Text(
+                                      'Add Photo',
+                                      style: GoogleFonts.jost(
+                                        color: Colors.black54,
+                                        fontSize: 18,
+                                        fontWeight: FontWeight.bold,
+                                      ),
+                                    ),
+                                  ],
+                                )
+                              : null,
+                        ),
+                      ),
+                      const SizedBox(height: 15),
+                      if (!isEditing)
+                        Text(
+                          nameController.text,
+                          textAlign: TextAlign.center,
+                          style: GoogleFonts.jost(
+                            fontSize: 22,
+                            fontWeight: FontWeight.bold,
+                            color: Colors.brown[800],
+                          ),
+                        ),
+                      const SizedBox(height: 15),
+
+                      // 🟢 Edit/Save Button placed above Full Name field
+                      Center(
+                        child: SizedBox(
+                          width: 250,
+                          height: 35,
+                          child: ElevatedButton(
+                            onPressed: _isSaving
+                                ? null
+                                : (isEditing
+                                    ? _saveInformation
+                                    : () => setState(() => isEditing = true)),
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor:
+                                  _isSaving ? Colors.grey : Colors.green[700],
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(8),
                               ),
                             ),
-                          ],
-                        )
-                      : null,
-                ),
-              ),
-              const SizedBox(height: 15),
-              if (!isEditing)
-                Text(
-                  nameController.text,
-                  textAlign: TextAlign.center,
-                  style: GoogleFonts.jost(
-                    fontSize: 22,
-                    fontWeight: FontWeight.bold,
-                    color: Colors.brown[800],
-                  ),
-                ),
-              const SizedBox(height: 20),
-              _buildCardTextField(nameController, "Full Name", isEditing),
-              _buildCardTextField(addressController, "Address", isEditing),
-              _buildCardTextField(
-                contactController,
-                "Contact Number",
-                isEditing,
-                keyboard: TextInputType.number,
-                validator: (val) {
-                  if (val == null || val.isEmpty) return 'Required field';
-                  if (!RegExp(r'^\d+$').hasMatch(val)) return 'Numbers only';
-                  return null;
-                },
-              ),
-              _buildCardTextField(
-                emailController,
-                "Email Address",
-                isEditing,
-                keyboard: TextInputType.emailAddress,
-                validator: (val) {
-                  if (val == null || val.isEmpty) return 'Required field';
-                  if (!_isValidEmail(val)) return 'INVALID email format';
-                  return null;
-                },
-              ),
-              _buildCardTextField(
-                ageController,
-                "Age",
-                isEditing,
-                keyboard: TextInputType.number,
-                validator: (val) {
-                  if (val == null || val.isEmpty) return 'Required field';
-                  if (!RegExp(r'^\d+$').hasMatch(val)) return 'Numbers only';
-                  return null;
-                },
-              ),
-              const SizedBox(height: 10),
-              Text("Gender:", style: GoogleFonts.jost(fontSize: 16)),
-              Wrap(spacing: 10, children: [
-                _chipOption("Male", Colors.lightBlue, selectedGender,
-                    (val) => setState(() => selectedGender = val)),
-                _chipOption("Female", Colors.pinkAccent, selectedGender,
-                    (val) => setState(() => selectedGender = val)),
-              ]),
-              const SizedBox(height: 10),
-              Text("User Type:", style: GoogleFonts.jost(fontSize: 16)),
-              Wrap(spacing: 10, children: [
-                _chipOption("Pet Owner", Colors.orange, selectedUserType,
-                    (val) => setState(() => selectedUserType = val)),
-                _chipOption("Pet Breeder", Colors.green, selectedUserType,
-                    (val) => setState(() => selectedUserType = val)),
-              ]),
-              const SizedBox(height: 20),
-              Center(
-                child: SizedBox(
-                  width: 150,
-                  height: 37,
-                  child: ElevatedButton(
-                    onPressed: _isSaving
-                        ? null
-                        : (isEditing
-                            ? _saveInformation
-                            : () => setState(() => isEditing = true)),
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor:
-                          _isSaving ? Colors.grey : Colors.green[700],
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(8),
+                            child: Text(
+                              _isSaving
+                                  ? "Saving..."
+                                  : isEditing
+                                      ? "Save"
+                                      : "Edit",
+                              style: GoogleFonts.jost(
+                                color: Colors.white,
+                                fontSize: 17,
+                                fontWeight: FontWeight.w600,
+                              ),
+                            ),
+                          ),
+                        ),
                       ),
-                    ),
-                    child: Text(
-                      _isSaving
-                          ? "Saving..."
-                          : isEditing
-                              ? "Save"
-                              : "Edit",
-                      style: GoogleFonts.jost(
-                        color: Colors.white,
-                        fontSize: 16,
+                      const SizedBox(height: 25),
+
+                      _buildCardTextField(
+                          nameController, "Full Name", isEditing),
+                      _buildCardTextField(
+                          addressController, "Address", isEditing),
+                      _buildCardTextField(
+                        contactController,
+                        "Contact Number",
+                        isEditing,
+                        keyboard: TextInputType.number,
+                        validator: (val) {
+                          if (val == null || val.isEmpty)
+                            return 'Required field';
+                          if (!RegExp(r'^\d+$').hasMatch(val))
+                            return 'Numbers only';
+                          return null;
+                        },
                       ),
-                    ),
+                      _buildCardTextField(
+                        emailController,
+                        "Email Address",
+                        isEditing,
+                        keyboard: TextInputType.emailAddress,
+                        validator: (val) {
+                          if (val == null || val.isEmpty)
+                            return 'Required field';
+                          if (!_isValidEmail(val))
+                            return 'INVALID email format';
+                          return null;
+                        },
+                      ),
+                      _buildCardTextField(
+                        ageController,
+                        "Age",
+                        isEditing,
+                        keyboard: TextInputType.number,
+                        validator: (val) {
+                          if (val == null || val.isEmpty)
+                            return 'Required field';
+                          if (!RegExp(r'^\d+$').hasMatch(val))
+                            return 'Numbers only';
+                          return null;
+                        },
+                      ),
+                      const SizedBox(height: 10),
+                      Text("Gender:", style: GoogleFonts.jost(fontSize: 16)),
+                      Wrap(spacing: 10, children: [
+                        _chipOption("Male", Colors.lightBlue, selectedGender,
+                            (val) => setState(() => selectedGender = val)),
+                        _chipOption("Female", Colors.pinkAccent, selectedGender,
+                            (val) => setState(() => selectedGender = val)),
+                      ]),
+                      const SizedBox(height: 10),
+                      Text("User Type:", style: GoogleFonts.jost(fontSize: 16)),
+                      Wrap(spacing: 10, children: [
+                        _chipOption(
+                            "Pet Owner",
+                            Colors.orange,
+                            selectedUserType,
+                            (val) => setState(() => selectedUserType = val)),
+                        _chipOption(
+                            "Pet Breeder",
+                            Colors.green,
+                            selectedUserType,
+                            (val) => setState(() => selectedUserType = val)),
+                      ]),
+                      const SizedBox(height: 20),
+                    ],
                   ),
                 ),
               ),
-            ],
-          ),
-        ),
       ),
     );
   }

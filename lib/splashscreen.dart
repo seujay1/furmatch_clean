@@ -4,15 +4,19 @@ import 'package:furmatch_clean/rootpage.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'dart:async';
 
+
 class SplashScreen extends StatefulWidget {
   const SplashScreen({super.key});
+
 
   @override
   State<SplashScreen> createState() => _SplashScreenState();
 }
 
+
 class _SplashScreenState extends State<SplashScreen> {
   final supabase = Supabase.instance.client;
+
 
   @override
   void initState() {
@@ -20,18 +24,22 @@ class _SplashScreenState extends State<SplashScreen> {
     _initializeApp();
   }
 
+
   Future<void> _initializeApp() async {
     await Future.delayed(const Duration(seconds: 1)); //  delay
     await _checkSession();
   }
 
+
   Future<void> _checkSession() async {
     try {
       final session = supabase.auth.currentSession;
 
+
       if (session != null) {
         final user = session.user;
         debugPrint("User already logged in: ${user.email}");
+
 
 //-----------------------CHECK OR CREATE PROFILE-----------------------------
         final response = await supabase
@@ -40,6 +48,7 @@ class _SplashScreenState extends State<SplashScreen> {
             .eq('id', user.id)
             .maybeSingle();
 
+
         if (response == null) {
           debugPrint("No profile found for user, creating one...");
           await supabase.from('profiles').insert({
@@ -47,6 +56,7 @@ class _SplashScreenState extends State<SplashScreen> {
             'email': user.email,
           });
         }
+
 
         _navigateTo(const RootPage());
       } else {
@@ -59,6 +69,7 @@ class _SplashScreenState extends State<SplashScreen> {
     }
   }
 
+
   void _navigateTo(Widget page) {
     if (!mounted) return;
     Navigator.pushReplacement(
@@ -66,6 +77,7 @@ class _SplashScreenState extends State<SplashScreen> {
       MaterialPageRoute(builder: (_) => page),
     );
   }
+
 
   @override
   Widget build(BuildContext context) {
@@ -100,3 +112,6 @@ class _SplashScreenState extends State<SplashScreen> {
     );
   }
 }
+
+
+

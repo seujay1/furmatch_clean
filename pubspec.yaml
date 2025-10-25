@@ -25,6 +25,7 @@ dependencies:
 
   supabase_flutter: ^2.3.4
   intl: ^0.18.1
+  flutter_launcher_icons: ^0.14.4
 
 
 dev_dependencies:
@@ -38,3 +39,8 @@ flutter:
   assets:
     - assets/Logos/MAINPAGE.png
     - assets/Logos/dog_cat.png
+
+flutter_icons:
+  android: true
+  ios: true
+  image_path: "assets/Logos/icon.png"

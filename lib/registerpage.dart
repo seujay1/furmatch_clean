@@ -2,12 +2,15 @@ import 'package:flutter/material.dart';
 import 'package:furmatch_clean/loginpage.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
+
 class RegisterPage extends StatefulWidget {
   const RegisterPage({super.key});
+
 
   @override
   State<RegisterPage> createState() => _RegisterPageState();
 }
+
 
 class _RegisterPageState extends State<RegisterPage> {
   final _formKey = GlobalKey<FormState>();
@@ -17,17 +20,22 @@ class _RegisterPageState extends State<RegisterPage> {
   final TextEditingController _confirmPasswordController =
       TextEditingController();
 
+
   bool _isLoading = false;
+
 
   Future<void> _registerUser() async {
     if (!_formKey.currentState!.validate()) return;
 
+
     setState(() => _isLoading = true);
     final supabase = Supabase.instance.client;
+
 
     final String fullName = _nameController.text.trim();
     final String email = _emailController.text.trim();
     final String password = _passwordController.text.trim();
+
 
     try {
 //--------------------REGISTER USER via SUPABASE AUTH-----------------------
@@ -38,10 +46,12 @@ class _RegisterPageState extends State<RegisterPage> {
         data: {'full_name': fullName},
       );
 
+
       final user = response.user;
       if (user == null) {
         throw Exception("Signup failed — no user returned.");
       }
+
 
 //----------------- create profile in profiles table sa db------------------
       try {
@@ -55,6 +65,7 @@ class _RegisterPageState extends State<RegisterPage> {
         debugPrint("⚠️ Could not insert profile: ${e.message}");
       }
 
+
 // -----------------redirect and notify------------------------
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
@@ -65,7 +76,9 @@ class _RegisterPageState extends State<RegisterPage> {
         ),
       );
 
+
       await Future.delayed(const Duration(seconds: 2));
+
 
       if (!mounted) return;
       Navigator.pushReplacement(
@@ -85,6 +98,7 @@ class _RegisterPageState extends State<RegisterPage> {
       if (mounted) setState(() => _isLoading = false);
     }
   }
+
 
   @override
   Widget build(BuildContext context) {
@@ -108,7 +122,8 @@ class _RegisterPageState extends State<RegisterPage> {
               ),
               const SizedBox(height: 30),
 
-              //full name 
+
+              //full name
               TextFormField(
                 controller: _nameController,
                 decoration: InputDecoration(
@@ -124,6 +139,7 @@ class _RegisterPageState extends State<RegisterPage> {
               ),
               const SizedBox(height: 20),
 
+
               // email
               TextFormField(
                 controller: _emailController,
@@ -136,14 +152,16 @@ class _RegisterPageState extends State<RegisterPage> {
                   ),
                 ),
                 validator: (value) {
-                  if (value == null || value.isEmpty)
+                  if (value == null || value.isEmpty) {
                     return 'Please enter your email';
+                  }
                   final emailRegex = RegExp(r'^[^@]+@[^@]+\.[^@]+');
                   if (!emailRegex.hasMatch(value)) return 'Enter a valid email';
                   return null;
                 },
               ),
               const SizedBox(height: 20),
+
 
               // password
               TextFormField(
@@ -157,14 +175,17 @@ class _RegisterPageState extends State<RegisterPage> {
                   ),
                 ),
                 validator: (value) {
-                  if (value == null || value.isEmpty)
+                  if (value == null || value.isEmpty) {
                     return 'Enter your password';
-                  if (value.length < 6)
+                  }
+                  if (value.length < 6) {
                     return 'Password must be at least 6 characters';
+                  }
                   return null;
                 },
               ),
               const SizedBox(height: 20),
+
 
               // confirm password
               TextFormField(
@@ -179,12 +200,14 @@ class _RegisterPageState extends State<RegisterPage> {
                   ),
                 ),
                 validator: (value) {
-                  if (value != _passwordController.text)
+                  if (value != _passwordController.text) {
                     return 'Passwords do not match';
+                  }
                   return null;
                 },
               ),
               const SizedBox(height: 50),
+
 
               // register button
               ElevatedButton(
@@ -203,6 +226,7 @@ class _RegisterPageState extends State<RegisterPage> {
                         style: TextStyle(color: Colors.white)),
               ),
               const SizedBox(height: 20),
+
 
               // go back to login
               TextButton(
@@ -224,3 +248,6 @@ class _RegisterPageState extends State<RegisterPage> {
     );
   }
 }
+
+
+

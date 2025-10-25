@@ -4,8 +4,10 @@ import 'package:furmatch_clean/userprofile.dart';
 import 'package:furmatch_clean/help_center_page.dart';
 import 'package:furmatch_clean/feedback_page.dart';
 import 'package:furmatch_clean/loginpage.dart';
+import 'package:furmatch_clean/reset_password_page.dart';
+import 'package:furmatch_clean/community_guidelines_page.dart'; 
+
 import 'package:supabase_flutter/supabase_flutter.dart';
-import 'reset_password_page.dart';
 
 class SettingsPage extends StatefulWidget {
   const SettingsPage({super.key});
@@ -17,7 +19,7 @@ class SettingsPage extends StatefulWidget {
 class _SettingsPageState extends State<SettingsPage> {
   final supabase = Supabase.instance.client;
 
-  // LOGOUT
+  // ------------------------LOGOUT
   Future<void> _confirmLogout() async {
     final bool? shouldLogout = await showDialog<bool>(
       context: context,
@@ -51,7 +53,7 @@ class _SettingsPageState extends State<SettingsPage> {
     }
   }
 
-  // DELETE ACCOUNT
+  //------------------ DELETE ACCOUNT
   Future<void> _confirmDeleteAccount() async {
     final bool? shouldDelete = await showDialog<bool>(
       context: context,
@@ -83,22 +85,18 @@ class _SettingsPageState extends State<SettingsPage> {
       final user = supabase.auth.currentUser;
       if (user == null) throw 'No user logged in';
 
-      // Delete profile (feedback auto-deleted via ON DELETE CASCADE)
       await supabase.from('profiles').delete().eq('id', user.id);
-
-      // Immediately sign out
       await supabase.auth.signOut();
 
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
-          content: Text("✅ Your account has been deleted."),
+          content: Text("Your account has been deleted."),
           backgroundColor: Colors.green,
           duration: Duration(seconds: 2),
         ),
       );
 
-      // Navigate to login page
       Navigator.pushAndRemoveUntil(
         context,
         MaterialPageRoute(builder: (_) => const LoginPage()),
@@ -108,7 +106,7 @@ class _SettingsPageState extends State<SettingsPage> {
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text("❌ Error deleting account: $e"),
+          content: Text("ERROR deleting account: $e"),
           backgroundColor: Colors.red,
         ),
       );
@@ -133,6 +131,14 @@ class _SettingsPageState extends State<SettingsPage> {
     Navigator.push(
       context,
       MaterialPageRoute(builder: (_) => const HelpCenterPage()),
+    );
+  }
+
+// -------community and breeding standards
+  void _openCommunityGuidelines() {
+    Navigator.push(
+      context,
+      MaterialPageRoute(builder: (_) => const CommunityGuidelinesPage()),
     );
   }
 
@@ -185,8 +191,10 @@ class _SettingsPageState extends State<SettingsPage> {
             subtitle: "Remove your account permanently",
             onTap: _confirmDeleteAccount,
           ),
+
           const SizedBox(height: 20),
           _buildSectionTitle("Help & Support"),
+
           _buildSettingsTile(
             icon: Icons.help_outline,
             title: "Help Center",
@@ -194,11 +202,18 @@ class _SettingsPageState extends State<SettingsPage> {
             onTap: _openHelpCenter,
           ),
           _buildSettingsTile(
+            icon: Icons.rule,
+            title: "Community & Breeding Standards", 
+            subtitle: "Ethical guidelines and compliance",
+            onTap: _openCommunityGuidelines,
+          ),
+          _buildSettingsTile(
             icon: Icons.feedback_outlined,
             title: "Send Feedback",
             subtitle: "Share your thoughts with us",
             onTap: _openFeedback,
           ),
+
           const SizedBox(height: 30),
           _buildLogoutButton(),
         ],

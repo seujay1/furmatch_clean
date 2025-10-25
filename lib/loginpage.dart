@@ -60,7 +60,7 @@ class _LoginPageState extends State<LoginPage> {
     } on AuthException {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
-          content: Text('INVALID email or password. Please try again.'),
+          content: Text('INVALID credentials or Unverified Email. Please try again.'),
           backgroundColor: Colors.red,
         ),
       );

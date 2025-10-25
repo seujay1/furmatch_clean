@@ -234,7 +234,7 @@ class _PetInfoScreenState extends State<PetInfoScreen> {
 
               // ------------Gender----------------
               DropdownButtonFormField<String>(
-                value: _gender,
+                initialValue: _gender,
                 decoration: const InputDecoration(
                     labelText: 'Gender', border: OutlineInputBorder()),
                 items: const [
@@ -264,7 +264,7 @@ class _PetInfoScreenState extends State<PetInfoScreen> {
                   Expanded(
                     flex: 1,
                     child: DropdownButtonFormField<String>(
-                      value: _ageUnit,
+                      initialValue: _ageUnit,
                       decoration: const InputDecoration(
                           labelText: 'Unit', border: OutlineInputBorder()),
                       items: const [
